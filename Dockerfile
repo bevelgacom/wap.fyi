@@ -17,7 +17,6 @@ RUN apk add --no-cache gcc musl-dev
 RUN mkdir /opt/wap.fyi
 WORKDIR /opt/wap.fyi
 
-COPY --from=build /go/src/github.com/bevelgacom/wap.fyi/stations.csv /opt/wap.fyi/
 COPY --from=build /go/src/github.com/bevelgacom/wap.fyi/server /usr/local/bin
 COPY --from=build /go/src/github.com/bevelgacom/wap.fyi/templates /opt/wap.fyi/templates
 
