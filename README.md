@@ -64,7 +64,7 @@ docker run -p 8080:8080 wap.fyi
 
 ### 🎮 How to Use
 
-1. **Visit the ** - Marvel at the retro design!
+1. **Visit wap.fyi** - Marvel at the retro design!
 1. **Enter your long URL** - No more typing on that silly keypad!
 1. **Choose a custom path** - Use letters, numbers, underscores, and hyphens only
 1. **Solve the challenge** - Because simple math questions aren't hard enough
