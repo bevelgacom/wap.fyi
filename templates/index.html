@@ -1,0 +1,340 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>wap.fyi - WAP Link Shortener</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <style type="text/css">
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            background-color: #c0c0c0;
+            margin: 0;
+            padding: 10px;
+        }
+        
+        .container {
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            padding: 15px;
+            margin: 0 auto;
+            width: 600px;
+        }
+        
+        h1 {
+            color: #000080;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #800000;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        
+        .form-table {
+            border: 1px solid #808080;
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        
+        input[type="text"] {
+            border: 1px inset #c0c0c0;
+            padding: 2px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+        }
+        
+        input[type="submit"], input[type="button"] {
+            background-color: #c0c0c0;
+            border: 2px outset #c0c0c0;
+            padding: 3px 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        input[type="submit"]:active, input[type="button"]:active {
+            border: 2px inset #c0c0c0;
+        }
+        
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #808080;
+            margin-top: 30px;
+            border-top: 1px solid #808080;
+            padding-top: 10px;
+        }
+        
+        a {
+            color: #0000ff;
+            text-decoration: underline;
+        }
+        
+        a:visited {
+            color: #800080;
+        }
+        
+        .warning {
+            background-color: #ffff00;
+            border: 1px solid #ff0000;
+            padding: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 5px;
+            border: 1px solid #808080;
+        }
+        
+        .working {
+            background-color: #ffff00;
+            color: #000000;
+        }
+        
+        .success {
+            background-color: #00ff00;
+            border: 1px solid #008000;
+            padding: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #000000;
+        }
+    </style>
+    
+    <script language="JavaScript" src="captcha.js"></script>
+    <script language="JavaScript">
+    <!--
+    // Page-specific proof of work integration
+    var powDifficulty = 4; // Number of trailing zeros required
+    var isSuccess = false; // Track if captcha was successful
+    
+    // Helper function to find start button
+    function getStartButton() {
+        var inputs = document.getElementsByTagName("input");
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].value == "Start Security Verification") {
+                return inputs[i];
+            }
+        }
+        return null;
+    }
+    
+    // Helper function to find stop button
+    function getStopButton() {
+        var inputs = document.getElementsByTagName("input");
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].value == "Stop") {
+                return inputs[i];
+            }
+        }
+        return null;
+    }
+    
+    // Update button visibility based on state
+    function updateButtonVisibility() {
+        var startBtn = getStartButton();
+        var stopBtn = getStopButton();
+        
+        if (startBtn) {
+            // Show start button only when not success and not running
+            startBtn.style.display = (isSuccess || working) ? "none" : "";
+        }
+        
+        if (stopBtn) {
+            // Show stop button only when running
+            stopBtn.style.display = working ? "" : "none";
+        }
+    }
+    
+    // Success callback when proof of work is completed
+    function onProofOfWorkSuccess(challenge, solution) {
+        isSuccess = true;
+        
+        // Enable the submit button
+        var submitButton = document.getElementById("shortenButton");
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.value = "Shorten URL!";
+        }
+        
+        // Update button visibility
+        updateButtonVisibility();
+        
+        // Hide the "Complete proof of work verification to enable" text
+        var fontElements = document.getElementsByTagName("font");
+        for (var j = 0; j < fontElements.length; j++) {
+            if (fontElements[j].innerHTML && 
+                fontElements[j].innerHTML.indexOf("Complete proof of work verification to enable") >= 0) {
+                fontElements[j].style.display = "none";
+            }
+        }
+    }
+    
+    // Check if proof of work is valid before form submission
+    function checkProofOfWork() {
+        if (!verifyProofOfWork("pow_challenge", "pow_solution", powDifficulty)) {
+            alert("Please complete the security verification first!");
+            return false;
+        }
+        return true;
+    }
+    
+    // Start the proof of work process
+    function startCaptcha() {
+        var challengeField = document.getElementById("pow_challenge");
+        if (!challengeField || challengeField.value == "") {
+            alert("No challenge available! Please refresh the page.");
+            return;
+        }
+        
+        // Reset success state
+        isSuccess = false;
+        
+        // Reset any previous solution
+        resetProofOfWork("pow_solution", "pow_status");
+        
+        // Update button visibility before starting (working will be set to true in startProofOfWork)
+        setTimeout(function() {
+            updateButtonVisibility();
+        }, 50);
+        
+        // Start computation
+        startProofOfWork("pow_challenge", "pow_solution", "pow_status", powDifficulty, 500);
+    }
+    
+    // Stop the proof of work process
+    function stopCaptcha() {
+        stopProofOfWork("pow_status");
+        // Update button visibility after stopping
+        setTimeout(function() {
+            updateButtonVisibility();
+        }, 50);
+    }
+    
+    // Initialize button visibility on page load
+    function initializeButtons() {
+        // Initially hide the stop button
+        var stopBtn = getStopButton();
+        if (stopBtn) {
+            stopBtn.style.display = "none";
+        }
+    }
+    
+    if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", initializeButtons);
+    } else {
+        window.onload = initializeButtons;
+    }
+    //-->
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>wap.fyi</h1>
+        <div class="subtitle">The Ultimate WAP Link Shortener!</div>
+        
+        <table width="100%" cellpadding="0" cellspacing="10">
+            <tr>
+                <td valign="middle">
+                    <div class="warning">
+                        <span class="blink">NEW!</span> Now supporting all WAP-enabled devices!
+                    </div>
+                </td>
+                <td valign="top">
+                    <img src="ani7110.gif" alt="Nokia 7110" height="100"/>
+                </td>
+            </tr>
+        </table>
+        
+        <p>Welcome to <b>wap.fyi</b> - the fastest way to shorten your WAP URLs! 
+        Perfect for your any WAP-compatible mobile phone or wherever typing is hard!</p>
+        
+        {{ if .ErrorMessage }}
+        <div class="warning">
+            <b>Error:</b> {{ .ErrorMessage }}
+        </div>
+        {{ end }}
+        
+        {{ if .SuccessMessage }}
+        <div class="success">
+            <b>Success:</b> {{ .SuccessMessage }}
+        </div>
+        {{ end }}
+        
+        <div class="form-table">
+            <form method="POST" action="/shorten.html" onSubmit="return checkProofOfWork();">
+                <table width="100%" cellpadding="3" cellspacing="0">
+                    <tr>
+                        <td width="120"><b>Long URL:</b></td>
+                        <td><input type="text" name="fullURL" size="50" maxlength="500" value="{{ .FullURL }}"></td>
+                    </tr>
+                    <tr>
+                        <td><b>Custom Path:</b></td>
+                        <td>
+                            wap.fyi/<input type="text" name="path" size="20" maxlength="50" value="{{ .Path }}">
+                            <br><font size="1" color="#808080">(Optional - leave blank for random path)</font>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" align="center">
+                            <br>
+                            <!-- Proof of Work Captcha Section -->
+                            <div id="pow_status" class="status">
+                                Complete proof of work verification to enable URL shortening.
+                            </div>
+                            <br>
+                            <input type="button" value="Start Security Verification" onClick="startCaptcha()">
+                            <input type="button" value="Stop" onClick="stopCaptcha()">
+                            <br><br>
+                            <input type="submit" value="Shorten URL!" id="shortenButton" disabled>
+                            <br><font size="1" color="#808080">Complete proof of work verification to enable</font>
+                        </td>
+                    </tr>
+                </table>
+                <input type="hidden" name="pow_challenge" id="pow_challenge" value="{{ .PoWChallenge }}">
+                <input type="hidden" name="pow_solution" id="pow_solution" value="">
+            </form>
+        </div>
+        
+        <hr>
+        
+        <h3>Why Choose wap.fyi?</h3>
+        <ul>
+            <li><b>Lightning Fast:</b> W A P F Y I! Just 6 letters and a . to type on your T9!</li>
+            <li><b>WAP Compatible:</b> Works with all WAP browsers!</li>
+            <li><b>Custom URLs:</b> Create memorable short links!</li>
+            <li><b>Free Service:</b> No hidden costs or subscriptions!</li>
+        </ul>
+        
+        <div class="footer">
+            <p><i>Best viewed with Netscape Navigator 3.0+ or Internet Explorer 4.0+</i></p>
+            <p>
+                <img src="netscape.gif" alt="Netscape Now!" width="82" height="30" border="0">
+                <img src="ie.gif" alt="Internet Explorer" width="75" height="30" border="0">
+                <a href="https://validator.w3.org/markup/check?uri=referer"><img src="https://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01 Transitional" height="31" width="88"></a>
+            </p>
+            <p>
+                <a href="http://blamba.bevelgacom.be"><img src="clubnokia.gif" alt="Join club nokia" /></a>
+            </p>
+            <p>&copy; wap.fyi is a <a href="http://bevelgacom.be">Bevelgacom</a> project.</p>
+            <p><a href="http://bevelgacom.be">Bevelgacom</a> is a non-profit ISP focussed on keeping retro internet technologies alive.</p>
+        </div>
+    </div>
+</body>
+</html>
