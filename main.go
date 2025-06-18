@@ -56,6 +56,23 @@ func generateRandomString(length int) (string, error) {
 	return string(result), nil
 }
 
+// generateRandomPath generates a random path string of specified length using [a-z0-9] characters
+func generateRandomPath(length int) (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, length)
+
+	for i := range result {
+		randomByte := make([]byte, 1)
+		_, err := rand.Read(randomByte)
+		if err != nil {
+			return "", err
+		}
+		result[i] = charset[randomByte[0]%byte(len(charset))]
+	}
+
+	return string(result), nil
+}
+
 // renderIndexWithData renders the index.html template with the provided data
 func renderIndexWithData(c echo.Context, data TemplateData) error {
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
@@ -67,7 +84,8 @@ func renderIndexWithData(c echo.Context, data TemplateData) error {
 func generateNewChallenge() (string, error) {
 	var challenge string
 	var err error
-	for {
+	maxTries := 1000
+	for i := 0; i < maxTries; i++ {
 		challenge, err = generateRandomString(200)
 		if err != nil {
 			return "", err
@@ -206,7 +224,27 @@ func handleShorten(c echo.Context) error {
 
 	// If the challenge is verified, proceed with URL shortening
 	if path == "" {
-		return renderError("path is required")
+		// Generate a random 5-character path with [a-z0-9]
+		var err error
+		maxTries := 1000
+		for i := 0; i < maxTries; i++ {
+			path, err = generateRandomPath(5)
+			if err != nil {
+				log.Printf("Failed to generate random path: %v", err)
+				return c.String(http.StatusInternalServerError, "error generating random path")
+			}
+
+			// Check if the generated path already exists
+			_, exists, err := challengeStore.GetURL(path)
+			if err != nil {
+				log.Printf("Failed to check if path exists: %v", err)
+				return c.String(http.StatusInternalServerError, "error checking path availability")
+			}
+			if !exists {
+				break // Path is available, use it
+			}
+			// If path exists, generate a new one
+		}
 	}
 
 	// check if the path is [a-zA-Z0-9_-] and not too long
