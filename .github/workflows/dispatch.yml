@@ -68,5 +68,5 @@ jobs:
         docker kill wapfyi_container || true
         docker rm wapfyi_container || true
         docker pull ghcr.io/${{ github.repository }}/wapfyi:$GITHUB_SHA
-        docker run -d --restart=always -e NAVIGATOR_API_URL="http://192.168.8.13:3000" --name wapfyi_container -p 9080:8080 ghcr.io/${{ github.repository }}/wapfyi:$GITHUB_SHA
+        docker run -d --restart=always -e REDIS_ADDR="fyi-valkey:6379" -e ENV=production --name wapfyi_container -p 9080:8080 ghcr.io/${{ github.repository }}/wapfyi:$GITHUB_SHA
         docker system prune -f -a
